@@ -1,12 +1,8 @@
 FROM python:3.9-slim
 LABEL maintainer="PeanutMelonSeedBigAlmond"
 ENV TZ="Asia/Shanghai"
-
 WORKDIR /app/fansMedalHelper
-
 COPY . .
-
+VOLUME [ "/app/fansMedalHelper/config" ]
 RUN pip3 install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
-
-
-CMD [ "python", "main.py" ]
+ENTRYPOINT [ "python", "main.py" ]
