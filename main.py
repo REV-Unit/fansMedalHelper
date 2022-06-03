@@ -18,7 +18,7 @@ warnings.filterwarnings(
 )
 os.chdir(os.path.dirname(os.path.abspath(__file__)).split(__file__)[0])
 try:
-    with open('users.yaml', 'r', encoding='utf-8') as f:
+    with open('config/users.yaml', 'r', encoding='utf-8') as f:
         users = yaml.load(f, Loader=yaml.FullLoader)
         assert users['ASYNC'] in [0, 1], "ASYNC参数错误"
         assert users['LIKE_CD'] >= 0, "LIKE_CD参数错误"
