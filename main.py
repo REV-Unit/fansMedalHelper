@@ -58,9 +58,6 @@ async def main():
             log.warning("更新内容: " + resp['changelog'])
             messageList.append(f"当前版本: {__VERSION__} ,最新版本: {resp['version']}")
             messageList.append(f"更新内容: {resp['changelog']} ")
-        if resp['notice']:
-            log.warning("公告: " + resp['notice'])
-            messageList.append(f"公告: {resp['notice']}")
     except Exception:
         messageList.append("检查版本失败")
         log.warning("检查版本失败")
