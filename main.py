@@ -15,7 +15,7 @@ warnings.filterwarnings(
     message="The localize method is no longer necessary, as this time zone supports the fold attribute",
 )
 os.chdir(os.path.dirname(os.path.abspath(__file__)).split(__file__)[0])
-config={}
+config = {}
 try:
     global users
     if os.environ.get("USERS"):
@@ -71,10 +71,11 @@ async def main():
     startTasks = []
     catchMsg = []
 
-    for token,conf in config.items():
+    for token, conf in config.items():
         if token:
             biliUser = BiliUser(
-                token, conf.get('white_uid', ''), conf.get('banned_uid', ''), conf
+                token, conf.get('white_uid', ''), conf.get(
+                    'banned_uid', ''), conf
             )
             initTasks.append(biliUser.init())
             startTasks.append(biliUser.start())
@@ -129,7 +130,8 @@ if __name__ == '__main__':
         if cron:
             log.info('使用内置定时器,开启定时任务,等待时间到达后执行')
             schedulers = BlockingScheduler()
-            schedulers.add_job(run, CronTrigger.from_crontab(cron), misfire_grace_time=3600)
+            schedulers.add_job(run, CronTrigger.from_crontab(
+                cron), misfire_grace_time=3600)
             schedulers.start()
         else:
             log.info('外部调用,开启任务')
