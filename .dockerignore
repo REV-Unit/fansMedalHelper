@@ -1,0 +1,5 @@
+.git/
+.github/
+Dockerfile
+.gitignore
+config/
