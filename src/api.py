@@ -120,7 +120,7 @@ class BiliApi:
         self.session = s
 
     def __check_response(self, resp: dict) -> dict:
-        if resp['code'] != 0:
+        if resp['code'] != 0 or ('mode_info' in resp['data'] and resp['message'] != ''):
             raise BiliApiError(resp['code'], resp['message'])
         return resp['data']
 
@@ -208,7 +208,7 @@ class BiliApi:
                 }
             ),
         )
-            # await asyncio.sleep(self.u.config['SHARE_CD'] if not self.u.config['ASYNC'] else 5)
+        # await asyncio.sleep(self.u.config['SHARE_CD'] if not self.u.config['ASYNC'] else 5)
 
     async def sendDanmaku(self, room_id: int) -> str:
         """
@@ -245,16 +245,39 @@ class BiliApi:
             "color": "16777215",
             "fontsize": "25",
         }
-        resp = await self.__post(
-            url,
-            params=SingableDict(params).signed,
-            data=data,
-            headers=self.headers.update(
-                {
-                    "Content-Type": "application/x-www-form-urlencoded",
+        try:
+            resp = await self.__post(
+                url,
+                params=SingableDict(params).signed,
+                data=data,
+                headers=self.headers.update(
+                    {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    }
+                ),
+            )
+        except BiliApiError as e:
+            if e.code == 0:
+                await asyncio.sleep(self.u.config['DANMAKU_CD'])
+                data = {
+                    "cid": room_id,
+                    "msg": "打卡",
+                    "rnd": int(time.time()),
+                    "color": "16777215",
+                    "fontsize": "25",
                 }
-            ),
-        )
+                resp = await self.__post(
+                    url,
+                    params=SingableDict(params).signed,
+                    data=data,
+                    headers=self.headers.update(
+                        {
+                            "Content-Type": "application/x-www-form-urlencoded",
+                        }
+                    ),
+                )
+                return json.loads(resp['mode_info']['extra'])['content']
+            raise e
         return json.loads(resp['mode_info']['extra'])['content']
 
     async def loginVerift(self):
@@ -293,6 +316,20 @@ class BiliApi:
             "actionKey": "appkey",
             "appkey": Crypto.APPKEY,
             "ts": int(time.time()),
+        }
+        return await self.__get(url, params=SingableDict(params).signed, headers=self.headers)
+
+    async def getMedalsInfoByUid(self, uid: int):
+        """
+        用户勋章信息
+        """
+        url = "https://api.live.bilibili.com/xlive/app-ucenter/v1/fansMedal/fans_medal_info"
+        params = {
+            "access_key": self.u.access_key,
+            "actionKey": "appkey",
+            "appkey": Crypto.APPKEY,
+            "ts": int(time.time()),
+            "target_id": uid,
         }
         return await self.__get(url, params=SingableDict(params).signed, headers=self.headers)
 

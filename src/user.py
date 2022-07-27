@@ -4,6 +4,7 @@ import os
 import asyncio
 import uuid
 from loguru import logger
+from datetime import datetime, timedelta
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -51,8 +52,12 @@ class BiliUser:
         if loginInfo['mid'] == 0:
             self.isLogin = False
             return False
+        userInfo = await self.api.getUserInfo()
+        if userInfo['medal']:
+            medalInfo = await self.api.getMedalsInfoByUid(userInfo['medal']['target_id'])
+            if medalInfo['has_fans_medal']:
+                self.initialMedal = medalInfo['my_fans_medal']
         self.log.log("SUCCESS", str(loginInfo['mid']) + " 登录成功")
-
         self.isLogin = True
         return True
 
@@ -181,10 +186,8 @@ class BiliUser:
                 self.errmsg.append(f"【{self.name}】 {medal['anchor_info']['nick_name']} 房间弹幕打卡失败: {str(e)}")
             finally:
                 await asyncio.sleep(self.config['DANMAKU_CD'])
-        if hasattr(self, 'wearedMedal'):
-            (await self.api.wearMedal(self.wearedMedal['medal']['medal_id'])) if self.config[
-                'WEARMEDAL'
-            ] else ...
+        if hasattr(self, 'initialMedal'):
+            (await self.api.wearMedal(self.initialMedal['medal_id'])) if self.config['WEARMEDAL'] else ...
         self.log.log("SUCCESS", "弹幕打卡任务完成")
         self.message.append(f"【{self.name}】 弹幕打卡任务完成 {n}/{len(self.medals)}")
 
@@ -228,14 +231,31 @@ class BiliUser:
         ):
             if len(l) > 0:
                 self.message.append(f"{n}" + ' '.join(l[:5]) + f"{'等' if len(l) > 5 else ''}" + f' {len(l)}个')
+
+        if hasattr(self, 'initialMedal'):
+            initialMedalInfo = await self.api.getMedalsInfoByUid(self.initialMedal['target_id'])
+            if initialMedalInfo['has_fans_medal']:
+                initialMedal = initialMedalInfo['my_fans_medal']
+                self.message.append(
+                    f"【当前佩戴】「{initialMedal['medal_name']}」({initialMedal['target_name']}) {initialMedal['level']} 级 "
+                )
+                if initialMedal['level'] < 20 and initialMedal['today_feed'] != 0:
+                    need = initialMedal['next_intimacy'] - initialMedal['intimacy']
+                    need_days = need // 1500 + 1
+                    end_date = datetime.now() + timedelta(days=need_days)
+                    self.message.append(f"今日已获取亲密度 {initialMedal['today_feed']} (B站结算有延迟，请耐心等待)")
+                    self.message.append(
+                        f"距离下一级还需 {need} 亲密度 预计需要 {need_days} 天 ({end_date.strftime('%Y-%m-%d')},以每日 1500 亲密度计算)"
+                    )
         await self.session.close()
         return self.message + self.errmsg + ['---']
 
     async def watchinglive(self):
         if not self.config['WATCHINGLIVE']:
-            self.log.log("INFO", "每日65分钟任务关闭")
+            self.log.log("INFO", "每日观看不直播任务关闭")
             return
-        self.log.log("INFO", "每日65分钟任务开始")
+        HEART_MAX = self.config['WATCHINGLIVE']
+        self.log.log("INFO", f"每日{HEART_MAX}分钟任务开始")
         heartNum = 0
         while True:
             tasks = []
@@ -245,12 +265,12 @@ class BiliUser:
             heartNum += 1
             self.log.log(
                 "INFO",
-                f"{' '.join([medal['anchor_info']['nick_name'] for medal in self.medalsLower20[:5]])} 等共 {len(self.medalsLower20)} 个房间的第{heartNum}次心跳包已发送（{heartNum}/{65}）",
+                f"{' '.join([medal['anchor_info']['nick_name'] for medal in self.medalsLower20[:5]])} 等共 {len(self.medalsLower20)} 个房间的第{heartNum}次心跳包已发送（{heartNum}/{HEART_MAX}）",
             )
             await asyncio.sleep(60)
-            if heartNum >= 66:
+            if heartNum >= HEART_MAX:
                 break
-        self.log.log("SUCCESS", "每日65分钟任务完成")
+        self.log.log("SUCCESS", f"每日{HEART_MAX}分钟任务完成")
 
     async def signInGroups(self):
         if not self.config['SIGNINGROUP']:
