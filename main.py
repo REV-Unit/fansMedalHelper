@@ -15,30 +15,36 @@ warnings.filterwarnings(
     message="The localize method is no longer necessary, as this time zone supports the fold attribute",
 )
 os.chdir(os.path.dirname(os.path.abspath(__file__)).split(__file__)[0])
+config={}
 try:
+    global users
     if os.environ.get("USERS"):
         users = json.loads(os.environ.get("USERS"))
     else:
         import yaml
 
         with open('config/users.yaml', 'r', encoding='utf-8') as f:
-            users = yaml.load(f, Loader=yaml.FullLoader)
-    assert users['ASYNC'] in [0, 1], "ASYNC参数错误"
-    assert users['LIKE_CD'] >= 0, "LIKE_CD参数错误"
-    assert users['SHARE_CD'] >= 0, "SHARE_CD参数错误"
-    assert users['DANMAKU_CD'] >= 0, "DANMAKU_CD参数错误"
-    assert users['WATCHINGLIVE'] >= 0, "WATCHINGLIVE参数错误"
-    assert users['WEARMEDAL'] in [0, 1], "WEARMEDAL参数错误"
-    config = {
-        "ASYNC": users['ASYNC'],
-        "LIKE_CD": users['LIKE_CD'],
-        "SHARE_CD": users['SHARE_CD'],
-        "DANMAKU_CD": users['DANMAKU_CD'],
-        "WATCHINGLIVE": users['WATCHINGLIVE'],
-        "WEARMEDAL": users['WEARMEDAL'],
-        "SIGNINGROUP": users.get('SIGNINGROUP', 2),
-        "PROXY": users.get('PROXY'),
-    }
+            users = yaml.load(f, Loader=yaml.FullLoader)["USERS"]
+
+            for u in users:
+                token = u["access_key"]
+                assert u['ASYNC'] in [0, 1], f"用户 {token} ASYNC参数错误"
+                assert u['LIKE_CD'] >= 0,  f"用户 {token} LIKE_CD参数错误"
+                assert u['SHARE_CD'] >= 0,  f"用户 {token} SHARE_CD参数错误"
+                assert u['DANMAKU_CD'] >= 0,  f"用户 {token} DANMAKU_CD参数错误"
+                assert u['WATCHINGLIVE'] >= 0,  f"用户 {token} WATCHINGLIVE参数错误"
+                assert u['WEARMEDAL'] in [0, 1],  f"用户 {token} WEARMEDAL参数错误"
+
+                config[token] = {
+                    "ASYNC": u['ASYNC'],
+                    "LIKE_CD": u['LIKE_CD'],
+                    "SHARE_CD": u['SHARE_CD'],
+                    "DANMAKU_CD": u['DANMAKU_CD'],
+                    "WATCHINGLIVE": u['WATCHINGLIVE'],
+                    "WEARMEDAL": u['WEARMEDAL'],
+                    "SIGNINGROUP": u.get('SIGNINGROUP', 2),
+                    "PROXY": u.get('PROXY'),
+                }
 except Exception as e:
     log.error(f"读取配置文件失败,请检查配置文件格式是否正确: {e}")
     exit(1)
@@ -64,10 +70,11 @@ async def main():
     initTasks = []
     startTasks = []
     catchMsg = []
-    for user in users['USERS']:
-        if user['access_key']:
+
+    for token,conf in config.items():
+        if token:
             biliUser = BiliUser(
-                user['access_key'], user.get('white_uid', ''), user.get('banned_uid', ''), config
+                token, conf.get('white_uid', ''), conf.get('banned_uid', ''), conf
             )
             initTasks.append(biliUser.init())
             startTasks.append(biliUser.start())
@@ -117,15 +124,16 @@ if __name__ == '__main__':
     from apscheduler.schedulers.blocking import BlockingScheduler
     from apscheduler.triggers.cron import CronTrigger
 
-    cron = users.get('CRON', None)
-    if cron:
-        log.info('使用内置定时器,开启定时任务,等待时间到达后执行')
-        schedulers = BlockingScheduler()
-        schedulers.add_job(run, CronTrigger.from_crontab(cron), misfire_grace_time=3600)
-        schedulers.start()
-    else:
-        log.info('外部调用,开启任务')
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(main())
-        log.info("任务结束")
+    for u in users:
+        cron = u.get('CRON', None)
+        if cron:
+            log.info('使用内置定时器,开启定时任务,等待时间到达后执行')
+            schedulers = BlockingScheduler()
+            schedulers.add_job(run, CronTrigger.from_crontab(cron), misfire_grace_time=3600)
+            schedulers.start()
+        else:
+            log.info('外部调用,开启任务')
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(main())
+            log.info("任务结束")
