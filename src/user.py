@@ -267,9 +267,9 @@ class BiliUser:
                 "INFO",
                 f"{' '.join([medal['anchor_info']['nick_name'] for medal in self.medalsLower20[:5]])} 等共 {len(self.medalsLower20)} 个房间的第{heartNum}次心跳包已发送（{heartNum}/{HEART_MAX}）",
             )
-            await asyncio.sleep(60)
             if heartNum >= HEART_MAX:
                 break
+            await asyncio.sleep(60)
         self.log.log("SUCCESS", f"每日{HEART_MAX}分钟任务完成")
 
     async def signInGroups(self):
