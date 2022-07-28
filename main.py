@@ -35,23 +35,14 @@ try:
                 assert u['WATCHINGLIVE'] >= 0,  f"用户 {token} WATCHINGLIVE参数错误"
                 assert u['WEARMEDAL'] in [0, 1],  f"用户 {token} WEARMEDAL参数错误"
 
-                config[token] = {
-                    "ASYNC": u['ASYNC'],
-                    "LIKE_CD": u['LIKE_CD'],
-                    "SHARE_CD": u['SHARE_CD'],
-                    "DANMAKU_CD": u['DANMAKU_CD'],
-                    "WATCHINGLIVE": u['WATCHINGLIVE'],
-                    "WEARMEDAL": u['WEARMEDAL'],
-                    "SIGNINGROUP": u.get('SIGNINGROUP', 2),
-                    "PROXY": u.get('PROXY'),
-                }
+                config[token] = u
 except Exception as e:
     log.error(f"读取配置文件失败,请检查配置文件格式是否正确: {e}")
     exit(1)
 
 
 @log.catch
-async def main():
+async def main(token:str):
     messageList = []
     session = aiohttp.ClientSession()
     try:
@@ -67,19 +58,19 @@ async def main():
     except Exception:
         messageList.append("检查版本失败")
         log.warning("检查版本失败")
+        
     initTasks = []
     startTasks = []
     catchMsg = []
 
-    for token, conf in config.items():
-        if token:
-            biliUser = BiliUser(
-                token, conf.get('white_uid', ''), conf.get(
-                    'banned_uid', ''), conf
-            )
-            initTasks.append(biliUser.init())
-            startTasks.append(biliUser.start())
-            catchMsg.append(biliUser.sendmsg())
+    conf=config[token]
+    biliUser = BiliUser(
+        token, conf.get('white_uid', ''), conf.get(
+            'banned_uid', ''), conf
+    )
+    initTasks.append(biliUser.init())
+    startTasks.append(biliUser.start())
+    catchMsg.append(biliUser.sendmsg())
     try:
         await asyncio.gather(*initTasks)
         await asyncio.gather(*startTasks)
@@ -90,10 +81,10 @@ async def main():
     finally:
         messageList = messageList + list(itertools.chain.from_iterable(await asyncio.gather(*catchMsg)))
     [log.info(message) for message in messageList]
-    if users.get('SENDKEY', ''):
+    if conf.get('SENDKEY', ''):
         await push_message(session, users['SENDKEY'], "  \n".join(messageList))
     await session.close()
-    if users.get('MOREPUSH', ''):
+    if conf.get('MOREPUSH', ''):
         from onepush import notify
 
         notifier = users['MOREPUSH']['notifier']
@@ -103,14 +94,14 @@ async def main():
             title=f"【B站粉丝牌助手推送】",
             content="  \n".join(messageList),
             **params,
-            proxy=config.get('PROXY'),
+            proxy=conf.get('PROXY'),
         )
         log.info(f"{notifier} 已推送")
 
 
-def run(*args, **kwargs):
+def run(*args,**kwargs):
     loop = asyncio.new_event_loop()
-    loop.run_until_complete(main())
+    loop.run_until_complete(main(kwargs["token"]))
     log.info("任务结束,等待下一次执行")
 
 
@@ -122,20 +113,23 @@ async def push_message(session, sendkey, message):
 
 
 if __name__ == '__main__':
-    from apscheduler.schedulers.blocking import BlockingScheduler
+    from apscheduler.schedulers.background import BackgroundScheduler
     from apscheduler.triggers.cron import CronTrigger
+
+    schedulers = BackgroundScheduler()
 
     for u in users:
         cron = u.get('CRON', None)
         if cron:
-            log.info('使用内置定时器,开启定时任务,等待时间到达后执行')
-            schedulers = BlockingScheduler()
+            log.info(f'用户 {u["access_key"]} 使用内置定时器,开启定时任务,等待时间到达后执行')
             schedulers.add_job(run, CronTrigger.from_crontab(
-                cron), misfire_grace_time=3600)
-            schedulers.start()
+                cron), misfire_grace_time=3600, kwargs={"token":u["access_key"]})
+            
         else:
-            log.info('外部调用,开启任务')
+            log.info(f'用户 {u["access_key"]} 外部调用,开启任务')
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            loop.run_until_complete(main())
+            loop.run_until_complete(main(token=u["access_key"]))
             log.info("任务结束")
+    schedulers.start()
+    input()
