@@ -9,7 +9,7 @@ resources:
 - repo: self
 
 variables:
-  tag: '$(Build.BuildId)'
+  tag: '${{$(Build.SourceVersion): 0 :7}}'
 
 stages:
 - stage: Build
@@ -23,9 +23,9 @@ stages:
       - task: Docker@2
         inputs:
           containerRegistry: 'Coding - fans_medal_helper'
-          repository: 'fans_medal_helper'
+          repository: 'gitsync/fans_medal_helper/fans_medal_helper'
           command: 'buildAndPush'
           Dockerfile: '**/Dockerfile'
           tags: |
-            ci-$(Build.BuildId)
+            ci-$(tag)-$(Build.BuildId)
             ci-latest
