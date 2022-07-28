@@ -8,9 +8,6 @@ trigger:
 resources:
 - repo: self
 
-variables:
-  tag: '${{Build.SourceVersion: 0 :7}}'
-
 stages:
 - stage: Build
   displayName: Build image
@@ -20,12 +17,17 @@ stages:
     pool:
       vmImage: ubuntu-latest
     steps:
+      - bash: |
+            export commitHash=$(Build.SourceVersion)
+            echo ${commitHash:0:7}
+            echo "##vso[task.setvariable variable=baseImageTag;isoutput=true]${commitHash:0:7}"
+        name: setBaseImageTag
       - task: Docker@2
         inputs:
-          containerRegistry: 'Coding - fans_medal_helper'
-          repository: 'gitsync/fans_medal_helper/fans_medal_helper'
+          containerRegistry: 'Coding'
+          repository: 'gitsync/fans_medal_helper/fansmedalhelper'
           command: 'buildAndPush'
           Dockerfile: '**/Dockerfile'
           tags: |
-            ci-${baseImageTag}-$(Build.BuildId)
+            ci-$(setBaseImageTag.baseImageTag)-$(Build.BuildId)
             ci-latest
