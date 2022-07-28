@@ -9,7 +9,7 @@ resources:
 - repo: self
 
 variables:
-  tag: '${{$(Build.SourceVersion): 0 :7}}'
+  tag: '${{Build.SourceVersion: 0 :7}}'
 
 stages:
 - stage: Build
@@ -27,5 +27,5 @@ stages:
           command: 'buildAndPush'
           Dockerfile: '**/Dockerfile'
           tags: |
-            ci-$(tag)-$(Build.BuildId)
+            ci-${baseImageTag}-$(Build.BuildId)
             ci-latest
