@@ -6,8 +6,11 @@
 
 import logging
 
-import requests
-from requests.exceptions import SSLError
+# import requests
+from aiohttp import ClientSSLError, ClientSession, TCPConnector
+
+
+# from requests.exceptions import SSLError
 
 from .exceptions import NoSuchNotifierError
 from .exceptions import OnePushException
@@ -59,17 +62,33 @@ class Provider(object):
             message = title
         return message
 
-    @staticmethod
-    def request(method, url, **kwargs):
-        session = requests.Session()
-        response = None
+    # @staticmethod
+    async def request(self, method, url: str, **kwargs):
+        if self.proxy:
+            from aiohttp_socks import ProxyConnector
+        # session = requests.Session()
+        # session = (
+        #     ClientSession() if not self.proxy else ClientSession(connector=TCPConnector(verify_ssl=False))
+        # )
+        # response = None
         try:
-            response = session.request(method, url, **kwargs)
-            log.debug('Response: {}'.format(response.text))
-        except SSLError as e:
+            if self.proxy:
+                connector = ProxyConnector.from_url(self.proxy)
+                session = ClientSession(connector=connector)
+                response = await session.request(method, url, **kwargs)
+            else:
+                session = ClientSession()
+                response = await session.request(method, url, **kwargs)
+            # log.debug('Response: {}'.format(response.text))
+        except ClientSSLError as e:
             log.error(e)
-            response = session.request(method, url, verify=False, **kwargs)
-            log.debug('Response: {}'.format(response.text))
+            if self.proxy:
+                connector = ProxyConnector.from_url(self.proxy, verify_ssl=False)
+            else:
+                connector = TCPConnector(verify_ssl=False)
+            session = ClientSession(connector=connector)
+            response = await session.request(method, url.replace('https', 'http'), proxy=self.proxy, **kwargs)
+            # log.debug('Response: {}'.format(response.text))
         except Exception as e:
             log.error(e)
         finally:
