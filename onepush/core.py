@@ -64,7 +64,7 @@ class Provider(object):
 
     # @staticmethod
     async def request(self, method, url: str, **kwargs):
-        if self.proxy:
+        if hasattr(self,"proxy") and self.proxy:
             from aiohttp_socks import ProxyConnector
         # session = requests.Session()
         # session = (
@@ -72,7 +72,7 @@ class Provider(object):
         # )
         # response = None
         try:
-            if self.proxy:
+            if hasattr(self,"proxy") and self.proxy:
                 connector = ProxyConnector.from_url(self.proxy)
                 session = ClientSession(connector=connector)
                 response = await session.request(method, url, **kwargs)
@@ -92,6 +92,8 @@ class Provider(object):
         except Exception as e:
             log.error(e)
         finally:
+            if session:
+                await session.close()
             return response
 
     def notify(self, **kwargs):

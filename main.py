@@ -87,9 +87,9 @@ async def main(token:str):
     if conf.get('MOREPUSH', ''):
         from onepush import notify
 
-        notifier = users['MOREPUSH']['notifier']
-        params = users['MOREPUSH']['params']
-        notify(
+        notifier = conf['MOREPUSH']['notifier']
+        params = conf['MOREPUSH']['params']
+        resp = await notify(
             notifier,
             title=f"【B站粉丝牌助手推送】",
             content="  \n".join(messageList),

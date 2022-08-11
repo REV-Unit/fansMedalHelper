@@ -28,16 +28,23 @@ class PushDeer(Provider):
                       pushkey: str,
                       title: str = None,
                       type: str = "markdown",
+                      markdown: bool = False,
                       **kwargs):
-        self.data = {
-            'pushkey': pushkey,
-            'type': type,
-        }
-        if title:
-            self.data["text"] = title
-            self.data["desp"] = content
+        if not markdown:
+            self.data = {
+                'pushkey': pushkey,
+                'text': content
+            }
         else:
-            self.data["text"] = content
+            self.data = {
+                'pushkey': pushkey,
+                'type': type,
+            }
+            if title:
+                self.data["text"] = title
+                self.data["desp"] = content
+            else:
+                self.data["text"] = content
         return self.data
 
     def _send_message(self):
