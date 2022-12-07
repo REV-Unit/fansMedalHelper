@@ -8,7 +8,7 @@ import itertools
 from src import BiliUser
 
 log = logger.bind(user="B站粉丝牌助手")
-__VERSION__ = "0.3.5"
+__VERSION__ = "0.3.6"
 
 warnings.filterwarnings(
     "ignore",
@@ -19,7 +19,7 @@ config = {}
 try:
     global users
     if os.environ.get("USERS"):
-        users = json.loads(os.environ.get("USERS"))
+        users = json.loads(os.environ.get("USERS", default = ""))
     else:
         import yaml
 
@@ -30,12 +30,21 @@ try:
                 token = u["access_key"]
                 assert u['ASYNC'] in [0, 1], f"用户 {token} ASYNC参数错误"
                 assert u['LIKE_CD'] >= 0,  f"用户 {token} LIKE_CD参数错误"
-                assert u['SHARE_CD'] >= 0,  f"用户 {token} SHARE_CD参数错误"
+                # assert u['SHARE_CD'] >= 0,  f"用户 {token} SHARE_CD参数错误"
                 assert u['DANMAKU_CD'] >= 0,  f"用户 {token} DANMAKU_CD参数错误"
                 assert u['WATCHINGLIVE'] >= 0,  f"用户 {token} WATCHINGLIVE参数错误"
                 assert u['WEARMEDAL'] in [0, 1],  f"用户 {token} WEARMEDAL参数错误"
 
-                config[token] = u
+                config[token] = {
+                    "ASYNC": u['ASYNC'],
+                    "LIKE_CD": u['LIKE_CD'],
+                    # "SHARE_CD": u['SHARE_CD'],
+                    "DANMAKU_CD": u['DANMAKU_CD'],
+                    "WATCHINGLIVE": u['WATCHINGLIVE'],
+                    "WEARMEDAL": u['WEARMEDAL'],
+                    "SIGNINGROUP": u.get('SIGNINGROUP', 2),
+                    "PROXY": u.get('PROXY'),
+                }
 except Exception as e:
     log.error(f"读取配置文件失败,请检查配置文件格式是否正确: {e}")
     exit(1)
