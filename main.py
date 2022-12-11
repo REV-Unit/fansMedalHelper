@@ -35,16 +35,7 @@ try:
                 assert u['WATCHINGLIVE'] >= 0,  f"用户 {token} WATCHINGLIVE参数错误"
                 assert u['WEARMEDAL'] in [0, 1],  f"用户 {token} WEARMEDAL参数错误"
 
-                config[token] = {
-                    "ASYNC": u['ASYNC'],
-                    "LIKE_CD": u['LIKE_CD'],
-                    # "SHARE_CD": u['SHARE_CD'],
-                    "DANMAKU_CD": u['DANMAKU_CD'],
-                    "WATCHINGLIVE": u['WATCHINGLIVE'],
-                    "WEARMEDAL": u['WEARMEDAL'],
-                    "SIGNINGROUP": u.get('SIGNINGROUP', 2),
-                    "PROXY": u.get('PROXY'),
-                }
+                config[token] = u
 except Exception as e:
     log.error(f"读取配置文件失败,请检查配置文件格式是否正确: {e}")
     exit(1)
