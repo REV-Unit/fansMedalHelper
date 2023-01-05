@@ -23,7 +23,12 @@ try:
     else:
         import yaml
 
-        with open('config/users.yaml', 'r', encoding='utf-8') as f:
+        if(os.environ.get("CONTAINER_MODE","")=="1"):
+            config_path='/config/users.yaml'
+        else:
+            config_path='config/users.yaml'
+            
+        with open(config_path, 'r', encoding='utf-8') as f:
             users = yaml.load(f, Loader=yaml.FullLoader)["USERS"]
 
             for u in users:

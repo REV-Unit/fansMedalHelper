@@ -2,7 +2,7 @@
 
 ## 关于镜像
 
-如果需要浏览镜像参考，请点击 [这里](https://wuxxabcdefg.coding.net/public-artifacts/gitsync/fans_medal_helper/packages)
+如果需要浏览镜像仓库，请点击 [这里](https://wuxxabcdefg.coding.net/public-artifacts/gitsync/fans_medal_helper/packages)
 
 镜像地址：
 
@@ -44,14 +44,21 @@ CI 版本的命名规则为
 3. 创建容器
 
     ```shell
-    docker run -dit -v FansMedalHelper:/app/fansMedalHelper/config --restart always --name FansMedalHelper wuxxabcdefg-docker.pkg.coding.net/gitsync/fans_medal_helper/fansmedalhelper:latest
+    docker run -dit -v FansMedalHelper:/config --restart always --name FansMedalHelper wuxxabcdefg-docker.pkg.coding.net/gitsync/fans_medal_helper/fansmedalhelper:latest
     ```
 
 4. 复制配置文件
 
     ```shell
-    docker cp users.yaml FansMedalHelper:/app/fansMedalHelper/config
+    docker cp users.yaml FansMedalHelper:/config
     ```
+
+    > 亦或是不创建数据卷，可以直接把 users.yaml 挂载到 /config/users.yaml
+
+    ```shell
+    docker run -dit -v /your/config/path/to/users.yaml:/config --restart always --name FansMedalHelper wuxxabcdefg-docker.pkg.coding.net/gitsync/fans_medal_helper/fansmedalhelper:latest
+    ````
+
 
 5. 查看运行日志
 
