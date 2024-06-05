@@ -5,7 +5,7 @@
 <h1> 新 B 站粉丝牌助手
 </h1>
 
-<p>当前版本：0.3.6</p>
+<p>当前版本：0.3.8</p>
 
 </div>
 
@@ -19,7 +19,6 @@ CI 构建状态：
 
 -   [x] 每日直播区签到
 -   [x] 每日点赞 1 次直播间 （100 亲密度）
--   ~~[x] 每日分享 1 次直播间 （100 亲密度）~~
 -   [x] 每日弹幕打卡（100 亲密度）
 -   [x] 每日观看 65 分钟 （ 每 5 分钟 100 共 1300 亲密度）
 -   [x] 每日应援团签到 (如果有的话) （10 亲密度）
@@ -71,3 +70,8 @@ CI 构建状态：
 ### 赞助原作者
 
 <img src="http://i0.hdslb.com/bfs/album/c267037c9513b8e44bc6ec95dbf772ff0439dce6.jpg" width="500" />
+
+### 鸣谢
+
+[<img src="https://s3.amazonaws.com/erxes/github/cloudflare.png" height="200"/>](https://www.cloudflare.com/)
+[<img src="https://user-images.githubusercontent.com/11474360/112592917-baa00600-8e41-11eb-9da4-ecb53bb3c2fa.png" width="200"/>](https://jb.gg/OpenSource)

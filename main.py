@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from loguru import logger
 import warnings
 import asyncio
@@ -8,7 +9,7 @@ import itertools
 from src import BiliUser
 
 log = logger.bind(user="B站粉丝牌助手")
-__VERSION__ = "0.3.6"
+__VERSION__ = "0.3.8"
 
 warnings.filterwarnings(
     "ignore",
@@ -71,7 +72,9 @@ async def main(token:str):
         # messageList = messageList + list(itertools.chain.from_iterable(await asyncio.gather(*catchMsg)))
         messageList.append(f"任务执行失败: {e}")
     finally:
-        messageList = messageList + list(itertools.chain.from_iterable(await asyncio.gather(*catchMsg)))
+        messageList = messageList + list(
+            itertools.chain.from_iterable(await asyncio.gather(*catchMsg))
+        )
     [log.info(message) for message in messageList]
     if conf.get('SENDKEY', ''):
         await push_message(session, users['SENDKEY'], "  \n".join(messageList))
@@ -86,7 +89,7 @@ async def main(token:str):
             title=f"【B站粉丝牌助手推送】",
             content="  \n".join(messageList),
             **params,
-            proxy=conf.get('PROXY'),
+            proxy=config.get('PROXY'),
         )
         log.info(f"{notifier} 已推送")
 

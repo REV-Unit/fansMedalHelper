@@ -4,7 +4,8 @@
 @Blog      : https://www.yindan.me
 """
 
-import logging
+# import logging
+from loguru import logger
 
 # import requests
 from aiohttp import ClientSSLError, ClientSession, TCPConnector
@@ -15,7 +16,9 @@ from aiohttp import ClientSSLError, ClientSession, TCPConnector
 from .exceptions import NoSuchNotifierError
 from .exceptions import OnePushException
 
-log = logging.getLogger('onepush')
+# log = logging.getLogger('onepush')
+
+log = None
 
 
 class Provider(object):
@@ -29,21 +32,22 @@ class Provider(object):
         self.datatype = 'data'
         self.url = None
         self.data = None
+        self.proxy = None
 
-    def _prepare_url(self, **kwargs):
+    async def _prepare_url(self, **kwargs):
         ...
 
-    def _prepare_data(self, **kwargs):
+    async def _prepare_data(self, **kwargs):
         ...
 
-    def _send_message(self):
+    async def _send_message(self):
         if self.method.upper() == 'GET':
             response = self.request('get', self.url, params=self.data)
         elif self.method.upper() == 'POST':
             if self.datatype.lower() == 'json':
-                response = self.request('post', self.url, json=self.data)
+                response = await self.request('post', self.url, json=self.data)
             else:
-                response = self.request('post', self.url, data=self.data)
+                response = await self.request('post', self.url, data=self.data)
         else:
             raise OnePushException('Request method {} not supported.'.format(self.method))
 
@@ -74,10 +78,10 @@ class Provider(object):
         try:
             if hasattr(self,"proxy") and self.proxy:
                 connector = ProxyConnector.from_url(self.proxy)
-                session = ClientSession(connector=connector)
+                session = ClientSession(connector=connector, trust_env = True)
                 response = await session.request(method, url, **kwargs)
             else:
-                session = ClientSession()
+                session = ClientSession(trust_env = True)
                 response = await session.request(method, url, **kwargs)
             # log.debug('Response: {}'.format(response.text))
         except ClientSSLError as e:
@@ -86,20 +90,20 @@ class Provider(object):
                 connector = ProxyConnector.from_url(self.proxy, verify_ssl=False)
             else:
                 connector = TCPConnector(verify_ssl=False)
-            session = ClientSession(connector=connector)
+            session = ClientSession(connector=connector, trust_env = True)
             response = await session.request(method, url.replace('https', 'http'), proxy=self.proxy, **kwargs)
             # log.debug('Response: {}'.format(response.text))
         except Exception as e:
             log.error(e)
         finally:
-            if session:
-                await session.close()
+            await session.close()
             return response
 
-    def notify(self, **kwargs):
-        self._prepare_url(**kwargs)
-        self._prepare_data(**kwargs)
-        return self._send_message()
+    async def notify(self, **kwargs):
+        self.proxy = kwargs.get('proxy')
+        await self._prepare_url(**kwargs)
+        await self._prepare_data(**kwargs)
+        return await self._send_message()
 
 
 from .providers import _all_providers  # noqa: E402
@@ -115,5 +119,8 @@ def get_notifier(provider_name: str):
     return _all_providers[provider_name]()
 
 
-def notify(provider_name: str, **kwargs):
-    return get_notifier(provider_name).notify(**kwargs)
+async def notify(provider_name: str, **kwargs):
+    global log
+    log = logger.bind(user=f"{provider_name} 推送")
+
+    return await get_notifier(provider_name).notify(**kwargs)

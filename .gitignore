@@ -9,3 +9,7 @@ login_info.txt
 users.yaml
 *.tmp
 config/
+.venv
+venv/
+.idea/
+*.swp
