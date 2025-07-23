@@ -22,6 +22,9 @@ stages:
             echo ${commitHash:0:7}
             echo "##vso[task.setvariable variable=baseImageTag;isoutput=true]${commitHash:0:7}"
         name: setBaseImageTag
+      - bash: |
+            docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+        name: SetupMultiarchEnvironment
       - task: Docker@2
         inputs:
           containerRegistry: 'Coding'
